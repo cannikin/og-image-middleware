@@ -11,9 +11,11 @@
     ]
   },
   "dependencies": {
+    "@apollo/experimental-nextjs-app-support": "0.0.0-commit-b8a73fe",
     "@redwoodjs/forms": "7.0.0-canary.1001",
     "@redwoodjs/router": "7.0.0-canary.1001",
     "@redwoodjs/web": "7.0.0-canary.1001",
+    "playwright": "^1.41.2",
     "react": "0.0.0-experimental-e5205658f-20230913",
     "react-dom": "0.0.0-experimental-e5205658f-20230913"
   },
