@@ -1,3 +1,6 @@
+import fs from 'fs'
+import path from 'node:path'
+
 import { createElement } from 'react'
 
 import { renderToString } from 'react-dom/server'
@@ -10,9 +13,8 @@ import App from './App'
 import { Document } from './Document'
 
 export const middleware = (req, res, options) => {
-  if (req.url.includes('.png')) {
-    return renderOgImage(req, options)
-  }
+  return renderOgImage(req, options)
+  // renderExtension(req, options)
 }
 
 export const ServerEntry = ({ css, meta }) => {
@@ -23,14 +25,26 @@ export const ServerEntry = ({ css, meta }) => {
   )
 }
 
+const renderExtension = async (req, { route }) => {
+  console.log('Rendering extension:')
+  console.log('🚀 ~ renderExtension ~ req:', route)
+}
+
 /**
  * @param {import('@redwoodjs/vite/middleware').MiddlewareRequest} req
  * @returns {Promise<MiddlewareResponse>}
  */
 const renderOgImage = async (req, { route }) => {
+  if (!req.url.includes('.png')) {
+    return null
+  }
+
   const { pathname, searchParams, origin } = new URL(req.url)
 
-  const parsedParams = matchPath(route.pathDefinition + '.png', pathname)
+  const parsedParams = matchPath(
+    route.pathDefinition + '.{extension}',
+    pathname
+  )
 
   const routeParams = {
     ...Object.fromEntries(searchParams.entries()),
@@ -48,46 +62,56 @@ const renderOgImage = async (req, { route }) => {
   })
 
   const ogImgFilePath =
-    './' + route.relativeFilePath.replace(/\.([jt]sx)/, '.ogImg.$1')
+    './' +
+    route.relativeFilePath.replace(
+      /\.([jt]sx)/,
+      `.${parsedParams.params.extension}.$1`
+    )
 
-  const { DATA, output: OgComponent } = await import(ogImgFilePath)
-  const { default: AppComponent } = await import(getPaths().web.app)
-  const { Document: DocumentComponent } = await import(getPaths().web.document)
-  const dataOut = await DATA(routeParams)
+  try {
+    const { data, output: OgComponent } = await import(
+      /* @vite-ignore */
+      ogImgFilePath
+    )
+    const dataOut = await data(routeParams)
 
-  const htmlOutput = renderToString(
-    createElement(
-      LocationProvider,
-      {
-        location: new URL(req.url),
-      },
+    const htmlOutput = renderToString(
       createElement(
-        DocumentComponent,
+        LocationProvider,
         {
-          // @TODO hardcoded index.css
-          css: [`${origin}/index.css`],
-          meta: [],
+          location: new URL(req.url),
         },
         createElement(
-          AppComponent,
-          {},
-          createElement(OgComponent, {
-            data: dataOut,
-            ...routeParams,
-          })
+          Document,
+          {
+            // @TODO hardcoded index.css
+            css: [`${origin}/index.css`],
+            meta: [],
+          },
+          createElement(
+            App,
+            {},
+            createElement(OgComponent, {
+              data: dataOut,
+              ...routeParams,
+            })
+          )
         )
       )
     )
-  )
 
-  await page.setContent(htmlOutput)
+    await page.setContent(htmlOutput)
 
-  const png = await page.screenshot({ type: 'png' })
+    const png = await page.screenshot({ type: 'png' })
 
-  await browser.close()
+    await browser.close()
 
-  const mwResponse = new MiddlewareResponse()
-  mwResponse.headers.append('Content-Type', 'image/png')
-  mwResponse.body = png
-  return mwResponse
+    const mwResponse = new MiddlewareResponse()
+    mwResponse.headers.append('Content-Type', 'image/png')
+    mwResponse.body = png
+    return mwResponse
+  } catch (e) {
+    console.error(`OG Image component import failed: ${ogImgFilePath}`)
+    console.error(e)
+  }
 }
