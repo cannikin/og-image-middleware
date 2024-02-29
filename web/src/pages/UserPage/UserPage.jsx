@@ -6,7 +6,7 @@ const UserPage = () => {
     <>
       <Metadata title="User" description="User page" />
 
-      <h1>UserPage</h1>
+      <h1 className="text-red-500">UserPage</h1>
       <p>
         Find me in <code>./web/src/pages/UserPage/UserPage.jsx</code>
       </p>
