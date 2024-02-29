@@ -2,7 +2,7 @@ import { useLocation } from '@redwoodjs/router'
 
 import { Document } from 'src/Document'
 
-export const DATA = async () => {
+export const data = async () => {
   return { foo: 'bar' }
 }
 
@@ -11,12 +11,10 @@ export const output = ({ data }) => {
   const { searchParams } = useLocation()
 
   return (
-    <Document>
-      <div>
-        <h1>OG Image</h1>
-        <p>{data.foo}</p>
-        <p>{JSON.stringify(Object.fromEntries(searchParams.entries()))}</p>
-      </div>
-    </Document>
+    <div className="bg-red-500">
+      <h1 className="text-sm">OG Image</h1>
+      <p>data: {data.foo}</p>
+      <p>query: {JSON.stringify(Object.fromEntries(searchParams.entries()))}</p>
+    </div>
   )
 }
