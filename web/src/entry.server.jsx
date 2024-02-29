@@ -1,11 +1,7 @@
-import fs from 'fs'
-import path from 'node:path'
-
 import { createElement } from 'react'
 
 import { renderToString } from 'react-dom/server'
 
-import { getPaths } from '@redwoodjs/project-config'
 import { LocationProvider, matchPath } from '@redwoodjs/router'
 import { MiddlewareResponse } from '@redwoodjs/vite/middleware'
 
@@ -13,7 +9,7 @@ import App from './App'
 import { Document } from './Document'
 
 export const middleware = (req, res, options) => {
-  return renderOgImage(req, options)
+  renderOgImage(req, options)
   // renderExtension(req, options)
 }
 
@@ -25,6 +21,7 @@ export const ServerEntry = ({ css, meta }) => {
   )
 }
 
+// in the future, you can create a component to register any extension, .json, .xml, etc.
 const renderExtension = async (req, { route }) => {
   console.log('Rendering extension:')
   console.log('🚀 ~ renderExtension ~ req:', route)
@@ -34,17 +31,24 @@ const renderExtension = async (req, { route }) => {
  * @param {import('@redwoodjs/vite/middleware').MiddlewareRequest} req
  * @returns {Promise<MiddlewareResponse>}
  */
-const renderOgImage = async (req, { route }) => {
+const renderOgImage = async (req, { route } = {}) => {
   if (!req.url.includes('.png')) {
     return null
   }
 
   const { pathname, searchParams, origin } = new URL(req.url)
 
-  const parsedParams = matchPath(
-    route.pathDefinition + '.{extension}',
-    pathname
-  )
+  const withExtension = (route) => {
+    if (route.pathDefinition === '/') {
+      // Because /.{extension} not possible
+      return '/index.{extension}'
+    } else {
+      // /user/{id}.{extension}
+      return route.pathDefinition + '.{extension}'
+    }
+  }
+
+  const parsedParams = matchPath(withExtension(route), pathname)
 
   const routeParams = {
     ...Object.fromEntries(searchParams.entries()),
