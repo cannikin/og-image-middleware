@@ -1,15 +1,17 @@
 import { createElement } from 'react'
 
+import mime from 'mime-types'
 import { renderToString } from 'react-dom/server'
 
 import { LocationProvider, matchPath } from '@redwoodjs/router'
 import { MiddlewareResponse } from '@redwoodjs/vite/middleware'
+import { OGIMAGE_DEFAULTS } from '@redwoodjs/web'
 
 import App from './App'
 import { Document } from './Document'
 
 export const middleware = (req, res, options) => {
-  renderOgImage(req, options)
+  return renderOgImage(req, options)
   // renderExtension(req, options)
 }
 
@@ -27,16 +29,19 @@ const renderExtension = async (req, { route }) => {
   console.log('🚀 ~ renderExtension ~ req:', route)
 }
 
+const OG_EXTENSIONS = ['png', 'jpg']
+
 /**
  * @param {import('@redwoodjs/vite/middleware').MiddlewareRequest} req
  * @returns {Promise<MiddlewareResponse>}
  */
 const renderOgImage = async (req, { route } = {}) => {
-  if (!req.url.includes('.png')) {
+  const { pathname, searchParams, origin } = new URL(req.url)
+
+  // if not an og image request, return null and go on to the next middleware
+  if (!OG_EXTENSIONS.includes(pathname.split('.').pop())) {
     return null
   }
-
-  const { pathname, searchParams, origin } = new URL(req.url)
 
   const withExtension = (route) => {
     if (route.pathDefinition === '/') {
@@ -57,13 +62,24 @@ const renderOgImage = async (req, { route } = {}) => {
 
   const { chromium } = await import('playwright')
 
-  const browser = await chromium.launch()
-  const page = await browser.newPage({
+  const screenshotOptions = {
     viewport: {
-      width: parseInt(routeParams.width || 1200),
-      height: parseInt(routeParams.height || 630),
+      width: parseInt(routeParams.width || OGIMAGE_DEFAULTS.width),
+      height: parseInt(routeParams.height || OGIMAGE_DEFAULTS.height),
     },
-  })
+    format: {
+      png: { type: 'png' },
+      jpg: {
+        type: 'jpeg',
+        quality: routeParams.quality
+          ? parseInt(routeParams.quality)
+          : OGIMAGE_DEFAULTS.quality,
+      },
+    },
+  }
+
+  const browser = await chromium.launch()
+  const page = await browser.newPage(screenshotOptions.viewport)
 
   const ogImgFilePath =
     './' +
@@ -105,14 +121,17 @@ const renderOgImage = async (req, { route } = {}) => {
     )
 
     await page.setContent(htmlOutput)
-
-    const png = await page.screenshot({ type: 'png' })
-
+    const image = await page.screenshot(
+      screenshotOptions.format[parsedParams.params.extension]
+    )
     await browser.close()
 
     const mwResponse = new MiddlewareResponse()
-    mwResponse.headers.append('Content-Type', 'image/png')
-    mwResponse.body = png
+    mwResponse.headers.append(
+      'Content-Type',
+      mime.lookup(parsedParams.params.extension)
+    )
+    mwResponse.body = image
     return mwResponse
   } catch (e) {
     console.error(`OG Image component import failed: ${ogImgFilePath}`)

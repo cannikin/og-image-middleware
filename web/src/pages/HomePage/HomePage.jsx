@@ -1,20 +1,10 @@
-import { Link, routes, useLocation } from '@redwoodjs/router'
-import { Metadata } from '@redwoodjs/web'
+import { useOgImage, Metadata } from '@redwoodjs/web'
 
 const HomePage = () => {
-  const { href } = useLocation()
-  // @TODO Implement this!
-  // const ogImageUrl = useOgImageUrl()
-
-  const ogImageUrl = href + '.png'
-
+  const { ogProps } = useOgImage({ extension: 'jpg' })
   return (
     <>
-      <Metadata
-        title="Home"
-        description="Home page"
-        og={{ image: ogImageUrl }}
-      />
+      <Metadata title="Home" description="My awesome homepage" og={ogProps} />
 
       <h1>HomePage</h1>
       <p>
