@@ -2,6 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-h1 {
-  @apply text-4xl font-bold text-red-500;
+.metadata {
+  @apply w-full;
+
+  td {
+    @apply p-2 text-xl text-left;
+  }
+
+  label {
+    @apply text-gray-400 text-sm;
+  }
+
+  span {
+    @apply block font-semibold;
+  }
 }
