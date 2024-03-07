@@ -8,10 +8,11 @@ import { renderToString } from 'react-dom/server'
 import { getPaths } from '@redwoodjs/project-config'
 import { LocationProvider, matchPath } from '@redwoodjs/router'
 import { MiddlewareResponse } from '@redwoodjs/vite/middleware'
-import { OGIMAGE_DEFAULTS } from '@redwoodjs/web'
 
 import App from '../App'
 import { Document } from '../Document'
+
+import { OGIMAGE_DEFAULTS } from './hooks'
 
 export default class OgImageMiddleware {
   supportedExtensions = ['jpg', 'png']
@@ -123,10 +124,35 @@ export default class OgImageMiddleware {
   }
 
   get debugElement() {
-    return createElement('div', {
-      style: { width: this.imageProps.width, height: this.imageProps.height },
-      className: `absolute top-0 left-0 border border-dashed border-red-500 pointer-events-none`,
-    })
+    return createElement(
+      'div',
+      {
+        style: {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          border: '1px dashed red',
+          pointerEvents: 'none',
+          width: this.imageProps.width,
+          height: this.imageProps.height,
+        },
+      },
+      createElement(
+        'div',
+        {
+          style: {
+            position: 'absolute',
+            left: '0',
+            right: '0',
+            bottom: '-1.5rem',
+            textAlign: 'center',
+            color: 'red',
+            fontWeight: 'normal',
+          },
+        },
+        `${this.imageProps.width} x ${this.imageProps.height}`
+      )
+    )
   }
 
   componentElements({ Component, data }) {
