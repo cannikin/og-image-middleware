@@ -13,15 +13,12 @@ export const output = ({ data }) => {
   return (
     <div className="p-8 bg-gray-200 h-full">
       <div className="p-8 bg-white rounded-lg shadow-lg">
-        <h1 className="text-6xl flex items-center justify-center font-semibold">
-          OG Image Middleware
-        </h1>
-        <div className="mt-8 flex items-start space-x-6">
-          <div className="w-3/4">
+        <div className="flex items-start space-x-8">
+          <div className="w-8/12">
             <img src="http://localhost:8910/photo.jpg" className="w-full shadow rounded"/>
           </div>
 
-          <div className="w-1/4">
+          <div className="w-4/12">
             <table className="metadata">
               <tbody>
                 {Object.entries(data).map(([key,value]) => (
