@@ -1,9 +1,11 @@
+import path from 'node:path'
 
 import { createElement } from 'react'
 
 import mime from 'mime-types'
 import { renderToString } from 'react-dom/server'
 
+import { getPaths } from '@redwoodjs/project-config'
 import { LocationProvider, matchPath } from '@redwoodjs/router'
 import { MiddlewareResponse } from '@redwoodjs/vite/middleware'
 import { OGIMAGE_DEFAULTS } from '@redwoodjs/web'
@@ -12,15 +14,14 @@ import App from '../App'
 import { Document } from '../Document'
 
 export default class OgImageMiddleware {
-
   supportedExtensions = ['jpg', 'png']
 
-  constructor(req,options) {
+  constructor(req, options) {
     this.req = req
     this.options = options
     this.url = new URL(req.url)
     this.route = options.route
-    this.parsedParams = matchPath(this.routeWithExtension,this.url.pathname)
+    this.parsedParams = matchPath(this.routeWithExtension, this.url.pathname)
     this.extension = this.parsedParams.params.extension
     this.routeParams = {
       ...Object.fromEntries(this.url.searchParams.entries()),
@@ -29,7 +30,9 @@ export default class OgImageMiddleware {
     this.imageProps = {
       width: parseInt(this.routeParams.width || OGIMAGE_DEFAULTS.width),
       height: parseInt(this.routeParams.height || OGIMAGE_DEFAULTS.height),
-      quality: this.routeParams.quality ? parseInt(this.routeParams.quality) : OGIMAGE_DEFAULTS.quality
+      quality: this.routeParams.quality
+        ? parseInt(this.routeParams.quality)
+        : OGIMAGE_DEFAULTS.quality,
     }
 
     this.debug = !!this.routeParams.debug
@@ -60,12 +63,10 @@ export default class OgImageMiddleware {
     const browser = await chromium.launch()
     const page = await browser.newPage({ viewport: screenshotOptions.viewport })
 
-    const ogImgFilePath =
-      '../' +
-      this.route.relativeFilePath.replace(
-        /\.([jt]sx)/,
-        `.${this.extension}.$1`
-      )
+    const ogImgFilePath = path.join(
+      getPaths().web.src,
+      this.route.relativeFilePath.replace(/\.([jt]sx)/, `.${this.extension}.$1`)
+    )
 
     const { data, Component } = await this.importComponent(ogImgFilePath)
 
@@ -80,8 +81,7 @@ export default class OgImageMiddleware {
         createElement(
           Document,
           {
-            // @TODO hardcoded index.css
-            css: [`${origin}/index.css`],
+            css: this.options.cssPaths.map((file) => `${origin}${file}`),
             meta: [],
           },
           createElement(
@@ -96,7 +96,7 @@ export default class OgImageMiddleware {
     const mwResponse = new MiddlewareResponse()
 
     if (this.debug) {
-      mwResponse.headers.append('Content-Type','text/html')
+      mwResponse.headers.append('Content-Type', 'text/html')
       mwResponse.body = htmlOutput
     } else {
       await page.setContent(htmlOutput)
@@ -105,10 +105,7 @@ export default class OgImageMiddleware {
       )
       await browser.close()
 
-      mwResponse.headers.append(
-        'Content-Type',
-        mime.lookup(this.extension)
-      )
+      mwResponse.headers.append('Content-Type', mime.lookup(this.extension))
       mwResponse.body = image
     }
 
@@ -126,27 +123,20 @@ export default class OgImageMiddleware {
   }
 
   get debugElement() {
-    return createElement(
-      'div',
-      {
-        style: { width: this.imageProps.width, height:this.imageProps.height },
-        className: `absolute top-0 left-0 border border-dashed border-red-500`
-      }
-    )
+    return createElement('div', {
+      style: { width: this.imageProps.width, height: this.imageProps.height },
+      className: `absolute top-0 left-0 border border-dashed border-red-500 pointer-events-none`,
+    })
   }
 
   componentElements({ Component, data }) {
-    const element = createElement(
-      Component,
-      {
-        data,
-        ...this.routeParams,
-      },
-    )
+    const element = createElement(Component, {
+      data,
+      ...this.routeParams,
+    })
 
     if (this.debug) {
       return [
-        this.debugElement,
         createElement(
           'div',
           {
@@ -154,17 +144,18 @@ export default class OgImageMiddleware {
           },
           element
         ),
-
+        this.debugElement,
       ]
     } else {
       return element
     }
   }
 
-
   async importComponent(filePath) {
+    console.info(filePath)
+
     try {
-      const { data,output } = await import(
+      const { data, output } = await import(
         /* @vite-ignore */
         filePath
       )
