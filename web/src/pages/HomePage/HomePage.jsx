@@ -1,4 +1,6 @@
-import { useOgImage, Metadata } from '@redwoodjs/web'
+import { Metadata } from '@redwoodjs/web'
+
+import { useOgImage } from 'src/lib/hooks'
 
 const HomePage = () => {
   const { ogProps } = useOgImage({ extension: 'jpg' })
