@@ -4,7 +4,7 @@ import { Css, Meta } from '@redwoodjs/web'
 
 export const Document = ({ children, css, meta }) => {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-neutral-800">
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
